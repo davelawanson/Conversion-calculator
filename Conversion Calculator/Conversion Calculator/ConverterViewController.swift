@@ -34,7 +34,6 @@ class ConverterViewController: UIViewController {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
-    
     @IBAction func handleButtonPressed(_ sender: UIButton) {
         let pressed = Button(rawValue: sender.currentTitle!)
         
@@ -62,7 +61,7 @@ class ConverterViewController: UIViewController {
                         (alertAction) -> Void in
                         if let stringToDouble = Double(self.currentInput) {
                             self.currentConversion = convertee
-                           
+                            self.convert(convertee: convertee, value: stringToDouble)
                         }
                     }))
                 }
@@ -87,7 +86,7 @@ class ConverterViewController: UIViewController {
                 }
                 
                 if let convertee = currentConversion, let input = Double(currentInput) {
-                    
+                    convert(convertee: convertee, value: input)
                 } else {
                     inputTextField.text = currentInput
                 }
@@ -112,5 +111,14 @@ class ConverterViewController: UIViewController {
         currentConversion = nil
     }
     
-
+    func convert(convertee: Conversion, value: Double) {
+        let initial = NSMeasurement(doubleValue: value, unit: convertee.initialUnit)
+        let desired = initial.converting(to: convertee.desiredUnit)
+        
+        convertedTextField.text! = "\(desired)"
+        inputTextField.text! = "\(initial.doubleValue) \(initial.unit.symbol)"
+    }
+    
+    
 }
+
