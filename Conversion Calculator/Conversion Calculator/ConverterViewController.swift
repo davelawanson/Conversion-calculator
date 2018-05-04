@@ -8,25 +8,26 @@
 
 import UIKit
 
-class ConverterViewController: UIViewController {
-    
-    @IBOutlet weak var inputTextField: UITextField!
-    @IBOutlet weak var convertedTextField: UITextField!
-    
-    var inverted = true
-    var currentInput = ""
-    var currentConversion: Conversion? = nil
+import UIKit
 
-    let conversions = [
-                        Conversion(initialUnit: UnitSpeed.milesPerHour, desiredUnit: UnitSpeed.kilometersPerHour),
-                       Conversion(initialUnit: UnitSpeed.kilometersPerHour, desiredUnit: UnitSpeed.milesPerHour),
-                       Conversion(initialUnit: UnitTemperature.fahrenheit, desiredUnit: UnitTemperature.celsius),
-                       Conversion(initialUnit: UnitTemperature.celsius, desiredUnit: UnitTemperature.fahrenheit),
-                     ]
+class ConverterViewController: UIViewController {
+    @IBOutlet weak var inputDisplay: UITextField!
+    @IBOutlet weak var outputDisplay: UITextField!
+    var inputVal: String = ""
+    var outputVal: String = ""
+    var converters = [Converter(label: "fahrenheit to celcius", inputUnit: "°F", outputUnit: "°C"),
+                      Converter(label: "celcius to fahrenheit", inputUnit: "°C", outputUnit: "°F"),
+                      Converter(label: "miles to kilometers", inputUnit: "mi", outputUnit: "km"),
+                      Converter(label: "kilometers to miles", inputUnit: "km", outputUnit: "mi")]
+    var currentConverter: Converter?
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        inputVal = ""
+        outputVal = ""
+        inputDisplay.text = converters[0].inputUnit
+        outputDisplay.text = converters[0].outputUnit
+        currentConverter = converters[0]
         // Do any additional setup after loading the view.
     }
     
@@ -34,91 +35,79 @@ class ConverterViewController: UIViewController {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
-    @IBAction func handleButtonPressed(_ sender: UIButton) {
-        let pressed = Button(rawValue: sender.currentTitle!)
-        
-        if case let isButtonDigit = pressed?.isDigit, isButtonDigit == true {
-            // if convertedTextField isn't empty, unit conversion just occured. clear everything on button press.
-            if (!convertedTextField.text!.isEmpty) {
-                clear()
-            }
-            inputTextField.text?.append(pressed!.rawValue)
-            currentInput += pressed!.rawValue
-            
-        } else {
-            // if not digit, handle specific Button cases
-            switch (pressed!) {
-                
-            case .Clear:
-                clear()
-                
-            case .Convert:
-                let alert = UIAlertController(title: "Converter", message: "Select conversion", preferredStyle: UIAlertControllerStyle.actionSheet)
-                
-                // create actions for every conversion in conversions collection
-                for convertee in conversions {
-                    alert.addAction(UIAlertAction(title: "\(convertee.initialUnit.symbol) to \(convertee.desiredUnit.symbol)", style: UIAlertActionStyle.default, handler: {
-                        (alertAction) -> Void in
-                        if let stringToDouble = Double(self.currentInput) {
-                            self.currentConversion = convertee
-                            self.convert(convertee: convertee, value: stringToDouble)
-                        }
-                    }))
-                }
-                
-                self.present(alert, animated: true, completion:  nil)
-            case .Decimal:
-                // if converted isn't empty, clear and start over
-                if (!convertedTextField.text!.isEmpty) {
-                    clear()
-                }
-                // no need to append multiple decimals. disallowing prevents errors
-                if (!inputTextField.text!.contains(".")) {
-                    inputTextField.text! += "."
-                    currentInput += "."
-                }
-                
-            case .Invert:
-                if (inverted) {
-                    currentInput.insert("-", at: currentInput.startIndex)
-                } else {
-                    currentInput.remove(at: currentInput.startIndex)
-                }
-                
-                if let convertee = currentConversion, let input = Double(currentInput) {
-                    convert(convertee: convertee, value: input)
-                } else {
-                    inputTextField.text = currentInput
-                }
-                inverted = !inverted
-                
-            default:
-                print("default case reached")
-                
-            }
+    
+    @IBAction func converterButton(_ sender: AnyObject) {
+        let alert = UIAlertController(title: "Choose Converter", message: "", preferredStyle: UIAlertControllerStyle.actionSheet)
+        for conv in converters {
+            alert.addAction(UIAlertAction(title: conv.label, style: UIAlertActionStyle.default, handler: { (alertAction) in
+                self.inputDisplay.text = conv.inputUnit
+                self.outputDisplay.text = conv.outputUnit
+                self.currentConverter = conv
+            }))
         }
-        //print("case: \(pressed!) raw: \(pressed!.rawValue)")
+        
+        self.present(alert, animated:true, completion: nil)
     }
     
-    
-    func clear() {
-        inputTextField.text = ""
-        currentInput = ""
+    @IBAction func buttonSelection(_ sender: UIButton) {
         
-        convertedTextField.text = ""
-        
-        inverted = true
-        currentConversion = nil
+        switch sender.tag {
+        case 0...9:
+            inputVal += String(sender.tag)
+            convert()
+        case -1:
+            inputDisplay.text = currentConverter!.inputUnit
+            outputDisplay.text = currentConverter!.outputUnit
+            inputVal = ""
+            outputVal = ""
+        case -2:
+            var input: Double? = Double(inputVal)
+            if input != nil {
+                input = input! * -1
+                inputVal = String(input!)
+            }
+            inputDisplay.text = inputVal + currentConverter!.inputUnit
+            convert()
+        case -3:
+            if(inputVal.range(of: ".") != nil)
+            {
+                break
+            }
+            else
+            {
+                inputVal += "."
+                inputDisplay.text = inputVal + currentConverter!.inputUnit
+            }
+            
+        default:
+            inputDisplay.text = inputDisplay.text
+        }
+        inputDisplay.text = inputVal + currentConverter!.inputUnit
+        outputDisplay.text = outputVal + currentConverter!.outputUnit
     }
     
-    func convert(convertee: Conversion, value: Double) {
-        let initial = NSMeasurement(doubleValue: value, unit: convertee.initialUnit)
-        let desired = initial.converting(to: convertee.desiredUnit)
-        
-        convertedTextField.text! = "\(desired)"
-        inputTextField.text! = "\(initial.doubleValue) \(initial.unit.symbol)"
+  
+    func convert()
+    {
+        let castInput:Double? = Double(inputVal)
+        var out:Double
+        switch currentConverter!.label {
+        case "fahrenheit to celcius":
+            out = (castInput! - 32) * (5/9)
+            outputVal = String(out)
+        case "celcius to fahrenheit":
+            out = (castInput! * (9/5)) + 32
+            outputVal = String(format: "%.2f", out)
+        case "miles to kilometers":
+            out = (castInput! * 1.60934)
+            outputVal = String(format: "%.2f", out)
+        case "kilometers to miles":
+            out = (castInput! / 1.60934)
+            outputVal = String(format: "%.2f", out)
+        default:
+            inputDisplay.text = inputDisplay.text
+            outputDisplay.text = outputDisplay.text
+        }
     }
-    
     
 }
-

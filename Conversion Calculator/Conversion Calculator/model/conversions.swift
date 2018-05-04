@@ -8,8 +8,18 @@
 
 import Foundation
 
-struct Conversion {
-    let initialUnit: Unit
-    let desiredUnit: Unit
+import Foundation
+
+struct Converter {
+    let label: String
+    let inputUnit: String
+    let outputUnit: String
+    
+    init(label: String, inputUnit: String, outputUnit: String) {
+        self.label = label
+        self.inputUnit = inputUnit
+        self.outputUnit = outputUnit
+    }
 }
+
 
